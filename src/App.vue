@@ -1,7 +1,5 @@
 <script setup lang="ts">
-// import { ref } from 'vue'
 import { GGanttChart, GGanttRow } from '@infectoone/vue-ganttastic'
-// import type { GanttBar } from './types'
 import { rows } from './utils'
 // 获取今天的日期
 const today = new Date()
@@ -60,7 +58,6 @@ function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .title {

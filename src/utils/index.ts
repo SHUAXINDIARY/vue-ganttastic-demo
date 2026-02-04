@@ -25,7 +25,7 @@ const randomTime = () => {
 
 export const rows = ref<{ label: string; bars: GanttBar[] }[]>(
     Array.from({ length: 100 }, (_, rowIndex) => {
-        const barCount = randomInt(1, 50)
+        const barCount = randomInt(1, 20)
 
         const bars: GanttBar[] = Array.from({ length: barCount }, (_, barIndex) => {
             const start = randomTime()

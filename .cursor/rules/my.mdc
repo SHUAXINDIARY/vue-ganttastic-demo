@@ -6,6 +6,16 @@ alwaysApply: true
 
 这是一个基于 **Vue 3 + TypeScript + Vite** 的数据可视化展示项目，主要使用 `vue-ganttastic` 甘特图组件进行数据展示。
 
+# 启用 Skills
+
+启用以下 skills，在相关任务时自动加载对应 skill 文件获取最佳实践：
+
+- **pnpm**: 包管理器相关操作，使用 `pnpm` 命令管理依赖、workspaces、catalogs
+- **vite**: Vite 构建配置、插件开发、SSR、`vite.config.ts` 相关
+- **vue**: Vue 3 Composition API、`<script setup>`、defineProps/defineEmits/defineModel、响应式系统
+- **vue-best-practices**: Vue 3 最佳实践和常见陷阱（响应式、computed、watch、组件、插槽、TypeScript等）
+- **vue-router-best-practices**: Vue Router 4 导航守卫、路由参数、路由生命周期
+
 ## 技术栈
 
 - **框架**: Vue 3.5+ (Composition API)

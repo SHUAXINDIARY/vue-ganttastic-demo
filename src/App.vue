@@ -142,7 +142,6 @@ function onDataUpdate(newData: GanttRowData[]) {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .header {
@@ -172,11 +171,11 @@ function onDataUpdate(newData: GanttRowData[]) {
 .gantt-wrapper {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .gantt-wrapper :deep(.g-gantt-chart) {
-  height: 100%;
+  min-height: 100%;
 }
 
 .code-wrapper {

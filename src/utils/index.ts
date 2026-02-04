@@ -43,9 +43,28 @@ function shuffle<T>(array: T[]): T[] {
     return result
 }
 
-export const rows = ref<{ label: string; bars: GanttBar[] }[]>(
-    Array.from({ length: 100 }, (_, rowIndex) => {
-        const barCount = randomInt(1, 20)
+// 生成配置接口
+export interface GenerateConfig {
+    rowCount: number      // 分镜数量
+    minBars: number       // 每个分镜最少任务数
+    maxBars: number       // 每个分镜最多任务数
+}
+
+// 默认配置
+export const defaultConfig: GenerateConfig = {
+    rowCount: 100,
+    minBars: 1,
+    maxBars: 20
+}
+
+// 生成甘特图数据的函数
+export function generateRows(config: GenerateConfig = defaultConfig): { label: string; bars: GanttBar[] }[] {
+    const { rowCount, minBars, maxBars } = config
+    const actualMinBars = Math.min(minBars, maxBars)
+    const actualMaxBars = Math.max(minBars, maxBars)
+
+    return Array.from({ length: rowCount }, (_, rowIndex) => {
+        const barCount = randomInt(actualMinBars, actualMaxBars)
         
         // 为每行打乱颜色顺序，确保同一行内颜色不重复
         const shuffledColors = shuffle(colors)
@@ -78,4 +97,7 @@ export const rows = ref<{ label: string; bars: GanttBar[] }[]>(
             bars
         }
     })
-)
+}
+
+// 初始化数据
+export const rows = ref<{ label: string; bars: GanttBar[] }[]>(generateRows())

@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { GGanttChart, GGanttRow } from '@infectoone/vue-ganttastic'
 import dayjs from 'dayjs'
-import { rows } from './utils'
+import { rows, generateRows, defaultConfig, type GenerateConfig } from './utils'
 import CodePanel from './components/code/index.vue'
 import type { GanttBar } from './types'
 
@@ -83,6 +83,23 @@ function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
 function onDataUpdate(newData: GanttRowData[]) {
   rows.value = newData
 }
+
+// ============================================
+// 生成数量控制
+// ============================================
+const generateConfig = ref<GenerateConfig>({ ...defaultConfig })
+const isGenerating = ref(false)
+
+async function regenerateData() {
+  isGenerating.value = true
+  // 使用 setTimeout 让 UI 有机会更新显示 loading 状态
+  await new Promise(resolve => setTimeout(resolve, 50))
+  try {
+    rows.value = generateRows(generateConfig.value)
+  } finally {
+    isGenerating.value = false
+  }
+}
 </script>
 
 <template>
@@ -91,6 +108,54 @@ function onDataUpdate(newData: GanttRowData[]) {
       <h1 class="title">抽卡师 刷新 - 今日任务甘特图</h1>
       <p class="subtitle">{{ dateStr }} (小时维度)</p>
     </header>
+    <!-- 生成数量控制面板 -->
+    <div class="control-panel">
+      <div class="control-group">
+        <label class="control-label">分镜数量</label>
+        <input
+          v-model.number="generateConfig.rowCount"
+          type="number"
+          class="control-input"
+          min="1"
+          max="500"
+        />
+      </div>
+      <div class="control-group">
+        <label class="control-label">最少任务数</label>
+        <input
+          v-model.number="generateConfig.minBars"
+          type="number"
+          class="control-input"
+          min="1"
+          max="50"
+        />
+      </div>
+      <div class="control-group">
+        <label class="control-label">最多任务数</label>
+        <input
+          v-model.number="generateConfig.maxBars"
+          type="number"
+          class="control-input"
+          min="1"
+          max="50"
+        />
+      </div>
+      <button class="regenerate-btn" :disabled="isGenerating" @click="regenerateData">
+        <span v-if="isGenerating" class="btn-loading">
+          <span class="spinner" />
+          生成中...
+        </span>
+        <span v-else>重新生成</span>
+      </button>
+    </div>
+
+    <!-- Loading 遮罩层 -->
+    <div v-if="isGenerating" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner" />
+        <p class="loading-text">正在生成数据...</p>
+      </div>
+    </div>
 
     <div class="main-content">
       <!-- 左侧甘特图 -->
@@ -142,10 +207,7 @@ function onDataUpdate(newData: GanttRowData[]) {
             <div class="detail-item">
               <span class="detail-label">颜色标识</span>
               <span class="detail-value">
-                <span 
-                  class="color-badge" 
-                  :style="{ background: selectedBarConfig.style?.background }"
-                />
+                <span class="color-badge" :style="{ background: selectedBarConfig.style?.background }" />
                 {{ selectedBarConfig.style?.background }}
               </span>
             </div>
@@ -181,6 +243,130 @@ function onDataUpdate(newData: GanttRowData[]) {
   color: #7f8c8d;
   margin: 0;
   font-size: 1.1em;
+}
+
+/* 控制面板样式 */
+.control-panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 0.9em;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.control-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.control-input:focus {
+  outline: none;
+  border-color: #42b883;
+  box-shadow: 0 0 0 3px rgba(66, 184, 131, 0.15);
+}
+
+.regenerate-btn {
+  padding: 8px 16px;
+  background: #42b883;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.regenerate-btn:hover {
+  background: #3aa876;
+}
+
+.regenerate-btn:active {
+  transform: scale(0.98);
+}
+
+.regenerate-btn:disabled {
+  background: #9ed4be;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Loading 遮罩层样式 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(2px);
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e9ecef;
+  border-top-color: #42b883;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin: 0;
+  color: #495057;
+  font-size: 1em;
+  font-weight: 500;
 }
 
 .main-content {
@@ -233,6 +419,7 @@ function onDataUpdate(newData: GanttRowData[]) {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);

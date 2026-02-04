@@ -1,0 +1,92 @@
+---
+alwaysApply: true
+---
+
+# 项目简介
+
+这是一个基于 **Vue 3 + TypeScript + Vite** 的数据可视化展示项目，主要使用 `vue-ganttastic` 甘特图组件进行数据展示。
+
+# 启用 Skills
+
+启用以下 skills，在相关任务时自动加载对应 skill 文件获取最佳实践：
+
+- **pnpm**: 包管理器相关操作，使用 `pnpm` 命令管理依赖、workspaces、catalogs
+- **vite**: Vite 构建配置、插件开发、SSR、`vite.config.ts` 相关
+- **vue**: Vue 3 Composition API、`<script setup>`、defineProps/defineEmits/defineModel、响应式系统
+- **vue-best-practices**: Vue 3 最佳实践和常见陷阱（响应式、computed、watch、组件、插槽、TypeScript等）
+- **vue-router-best-practices**: Vue Router 4 导航守卫、路由参数、路由生命周期
+
+## 技术栈
+
+- **框架**: Vue 3.5+ (Composition API)
+- **构建工具**: Vite 7.x
+- **语言**: TypeScript 5.9+
+- **主要依赖**: @infectoone/vue-ganttastic (甘特图组件)
+- 使用pnpm管理依赖
+
+## 开发规范
+
+### Vue 组件规范
+
+- 使用 `<script setup lang="ts">` 语法编写组件
+- 优先使用 Composition API 和组合式函数
+- 组件文件使用 PascalCase 命名，如 `GanttChart.vue`
+- Props 和 Emits 必须使用 TypeScript 类型定义
+- template的组件要和import引入的保持一致
+
+```vue
+<script setup lang="ts">
+interface Props {
+  title: string
+  data: GanttItem[]
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  (e: 'update', value: GanttItem): void
+}>()
+</script>
+```
+
+### TypeScript 规范
+
+- 启用严格模式，避免使用 `any` 类型
+- 为所有函数参数和返回值添加类型注解
+- 接口名使用 PascalCase，如 `GanttItem`
+- 类型文件放在 `src/types/` 目录下
+
+### 项目结构
+
+```
+src/
+├── components/     # 可复用组件
+├── views/          # 页面视图
+├── composables/    # 组合式函数
+├── types/          # TypeScript 类型定义
+├── utils/          # 工具函数
+└── assets/         # 静态资源
+```
+
+### vue-ganttastic 使用规范
+
+- 甘特图数据结构参考官方文档 https://zunnzunn.github.io/vue-ganttastic/
+- 配置项使用响应式数据管理
+- 事件处理使用 emit 传递给父组件
+
+
+### 时间处理
+
+- 均使用dayjs 文档 https://day.js.org/en/
+
+### 代码风格
+
+- 使用 ES Module 导入导出
+- 字符串使用单引号
+- 语句末尾不加分号（如项目配置了 ESLint 则遵循项目配置）
+- 缩进使用 2 个空格
+
+## 常用命令
+
+- `npm run dev` - 启动开发服务器
+- `npm run build` - 类型检查并构建生产版本
+- `npm run preview` - 预览生产构建

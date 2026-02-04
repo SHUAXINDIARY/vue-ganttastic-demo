@@ -1,63 +1,85 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { GGanttChart, GGanttRow } from '@infectoone/vue-ganttastic'
 import dayjs from 'dayjs'
 import { rows } from './utils'
 import CodePanel from './components/code/index.vue'
 import type { GanttBar } from './types'
 
+// ============================================
+// 类型定义
+// ============================================
 interface GanttRowData {
   label: string
   bars: GanttBar[]
 }
 
-// 获取今天的日期
-const today = new Date()
-const dateStr = today.toISOString().split('T')[0]
+interface BarConfig {
+  id?: string
+  label?: string
+  style?: Record<string, string>
+}
 
-// 图表时间范围：一天 09:00 - 20:59
-const chartStart = `${dateStr} 09:00`
-const chartEnd = `${dateStr} 20:59`
+// ============================================
+// 图表时间配置
+// ============================================
+const dateStr = computed(() => dayjs().format('YYYY-MM-DD'))
+const chartStart = computed(() => `${dateStr.value} 09:00`)
+const chartEnd = computed(() => `${dateStr.value} 20:59`)
 
-// Modal 状态
-const showModal = ref(false)
-const selectedBar = ref<Record<string, unknown> | null>(null)
-
-// 格式化上方时间轴标签（月份+天数中文格式）
+// ============================================
+// 时间格式化函数
+// ============================================
 function formatUpperTimeunit(value: string): string {
   const date = dayjs(value)
   return date.isValid() ? date.format('M月D日') : value
 }
 
-// 格式化小时时间轴标签
 function formatTimeunit(label: string | undefined): string {
   return label ? `${label}时` : ''
 }
 
-// 格式化时间显示
 function formatBarTime(datetime: string): string {
   const date = dayjs(datetime)
   return date.isValid() ? date.format('HH:mm') : datetime
 }
 
-// 条形拖动事件处理
-function onBarDragEnd(event: { bar: Record<string, unknown>; e: MouseEvent }) {
-  console.log('Bar dragged:', event.bar)
-}
+// ============================================
+// Modal 状态管理
+// ============================================
+const showModal = ref(false)
+const selectedBar = ref<Record<string, unknown> | null>(null)
 
-// 条形点击事件 - 打开详情 Modal
-function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
-  selectedBar.value = event.bar
+// 选中条的配置信息（计算属性避免重复类型转换）
+const selectedBarConfig = computed<BarConfig | null>(() => {
+  if (!selectedBar.value) return null
+  return selectedBar.value.ganttBarConfig as BarConfig
+})
+
+function openModal(bar: Record<string, unknown>) {
+  selectedBar.value = bar
   showModal.value = true
 }
 
-// 关闭 Modal
 function closeModal() {
   showModal.value = false
   selectedBar.value = null
 }
 
-// 更新甘特图数据
+// ============================================
+// 甘特图事件处理
+// ============================================
+function onBarDragEnd(event: { bar: Record<string, unknown>; e: MouseEvent }) {
+  console.log('Bar dragged:', event.bar)
+}
+
+function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
+  openModal(event.bar)
+}
+
+// ============================================
+// 数据更新
+// ============================================
 function onDataUpdate(newData: GanttRowData[]) {
   rows.value = newData
 }
@@ -65,12 +87,11 @@ function onDataUpdate(newData: GanttRowData[]) {
 
 <template>
   <div class="page-container">
-    <div class="header">
+    <header class="header">
       <h1 class="title">📅 今日任务甘特图</h1>
       <p class="subtitle">{{ dateStr }} (小时维度)</p>
-    </div>
-<!-- 操作控制区块 -->
- 
+    </header>
+
     <div class="main-content">
       <!-- 左侧甘特图 -->
       <div class="gantt-wrapper">
@@ -101,14 +122,14 @@ function onDataUpdate(newData: GanttRowData[]) {
             <h2>任务详情</h2>
             <button class="modal-close" @click="closeModal">&times;</button>
           </div>
-          <div v-if="selectedBar" class="modal-body">
+          <div v-if="selectedBar && selectedBarConfig" class="modal-body">
             <div class="detail-item">
               <span class="detail-label">任务名称</span>
-              <span class="detail-value">{{ (selectedBar.ganttBarConfig as Record<string, unknown>)?.label ?? '-' }}</span>
+              <span class="detail-value">{{ selectedBarConfig.label ?? '-' }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">任务ID</span>
-              <span class="detail-value">{{ (selectedBar.ganttBarConfig as Record<string, unknown>)?.id ?? '-' }}</span>
+              <span class="detail-value">{{ selectedBarConfig.id ?? '-' }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">开始时间</span>
@@ -123,9 +144,9 @@ function onDataUpdate(newData: GanttRowData[]) {
               <span class="detail-value">
                 <span 
                   class="color-badge" 
-                  :style="{ background: ((selectedBar.ganttBarConfig as Record<string, unknown>)?.style as Record<string, string>)?.background }"
-                ></span>
-                {{ ((selectedBar.ganttBarConfig as Record<string, unknown>)?.style as Record<string, string>)?.background }}
+                  :style="{ background: selectedBarConfig.style?.background }"
+                />
+                {{ selectedBarConfig.style?.background }}
               </span>
             </div>
           </div>

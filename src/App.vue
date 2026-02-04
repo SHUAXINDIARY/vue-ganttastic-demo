@@ -88,7 +88,7 @@ function onDataUpdate(newData: GanttRowData[]) {
 <template>
   <div class="page-container">
     <header class="header">
-      <h1 class="title">📅 今日任务甘特图</h1>
+      <h1 class="title">抽卡师 刷新 - 今日任务甘特图</h1>
       <p class="subtitle">{{ dateStr }} (小时维度)</p>
     </header>
 

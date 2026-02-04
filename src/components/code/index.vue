@@ -76,7 +76,7 @@ const stats = computed(() => {
 <template>
   <div class="code-panel">
     <div class="panel-header">
-      <h3>数据结构</h3>
+      <h3>数据结构 - 可编辑</h3>
       <div class="stats">
         <span class="stat-item">行数: {{ stats.totalRows }}</span>
         <span class="stat-item">任务数: {{ stats.totalBars }}</span>

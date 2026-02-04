@@ -69,7 +69,8 @@ function onDataUpdate(newData: GanttRowData[]) {
       <h1 class="title">📅 今日任务甘特图</h1>
       <p class="subtitle">{{ dateStr }} (小时维度)</p>
     </div>
-
+<!-- 操作控制区块 -->
+ 
     <div class="main-content">
       <!-- 左侧甘特图 -->
       <div class="gantt-wrapper">

@@ -69,12 +69,25 @@ export function generateRows(config: GenerateConfig = defaultConfig): { label: s
         // 为每行打乱颜色顺序，确保同一行内颜色不重复
         const shuffledColors = shuffle(colors)
 
+        // 每行最多允许 2 个 2 小时的长任务
+        const MAX_LONG_TASKS = 2
+        let longTaskCount = 0
+
         const bars: GanttBar[] = Array.from({ length: barCount }, (_, barIndex) => {
             const start = randomTime()
-            const endHour = Math.min(
-                parseInt(start.slice(0, 2)) + randomInt(1, 2),
-                19
-            )
+            const startHour = parseInt(start.slice(0, 2))
+
+            // 决定任务时长（小时）：1 或 2，但 2 小时任务受数量限制
+            let durationHours: number
+            if (longTaskCount < MAX_LONG_TASKS && randomInt(0, 3) === 0) {
+                // 约 25% 概率生成 2 小时长任务（受上限约束）
+                durationHours = 2
+                longTaskCount++
+            } else {
+                durationHours = 1
+            }
+
+            const endHour = Math.min(startHour + durationHours, 19)
             const end = `${String(endHour).padStart(2, '0')}:${start.slice(3)}`
 
             // 使用索引取色，确保同一行不重复

@@ -5,6 +5,7 @@ export interface GanttBar {
     ganttBarConfig: {
         id: string
         label?: string
+        immobile?: boolean
         style?: Record<string, string>
     }
 }

@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { GGanttChart, GGanttRow } from '@infectoone/vue-ganttastic'
+import { RecycleScroller } from 'vue-virtual-scroller'
 import dayjs from 'dayjs'
 import { rows, generateRows, defaultConfig, type GenerateConfig } from './utils'
 import CodePanel from './components/code/index.vue'
 import type { GanttBar } from './types'
+
+// ============================================
+// 虚拟滚动阈值
+// ============================================
+const VIRTUAL_SCROLL_THRESHOLD = 50
 
 // ============================================
 // 类型定义
@@ -69,24 +75,25 @@ function closeModal() {
 // ============================================
 // 甘特图事件处理
 // ============================================
-let isDragging = false
-
-function onBarDragStart() {
-  isDragging = true
-}
-
-function onBarDragEnd(event: { bar: Record<string, unknown>; e: MouseEvent }) {
-  console.log('Bar dragged:', event.bar)
-  // 延迟重置标记，确保 click 事件先被拦截
-  setTimeout(() => {
-    isDragging = false
-  }, 0)
-}
-
 function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
-  if (isDragging) return
   openModal(event.bar)
 }
+
+// ============================================
+// 虚拟滚动
+// ============================================
+const useVirtualScroll = computed(() => rows.value.length > VIRTUAL_SCROLL_THRESHOLD)
+
+// 为 RecycleScroller 添加唯一 id 的行数据
+const rowsWithId = computed(() =>
+  rows.value.map((row, index) => ({
+    ...row,
+    id: `row-${index}-${row.label}`,
+  }))
+)
+
+// 甘特图行高（与 GGanttChart 的 row-height 保持一致）
+const ROW_HEIGHT = 45
 
 // ============================================
 // 数据更新
@@ -213,15 +220,32 @@ async function regenerateData() {
       <!-- 左侧甘特图 -->
       <div class="gantt-wrapper">
         <GGanttChart :chart-start="chartStart" :chart-end="chartEnd" precision="hour" width="100%" bar-start="beginDate"
-          bar-end="endDate" :row-height="45" grid current-time current-time-label="当前时间" @click-bar="onBarClick"
-          @dragstart-bar="onBarDragStart" @dragend-bar="onBarDragEnd">
+          bar-end="endDate" :row-height="ROW_HEIGHT" grid current-time current-time-label="当前时间" @click-bar="onBarClick">
           <template #upper-timeunit="{ value }">
             {{ formatUpperTimeunit(value ?? '') }}
           </template>
           <template #timeunit="{ label }">
             {{ formatTimeunit(label) }}
           </template>
-          <GGanttRow v-for="row in rows" :key="row.label" :label="row.label" :bars="row.bars" />
+
+          <!-- 超过阈值时启用虚拟滚动 -->
+          <RecycleScroller
+            v-if="useVirtualScroll"
+            class="virtual-scroller"
+            :items="rowsWithId"
+            :item-size="ROW_HEIGHT"
+            key-field="id"
+            :buffer="ROW_HEIGHT * 10"
+          >
+            <template #default="{ item }">
+              <GGanttRow :label="item.label" :bars="item.bars" />
+            </template>
+          </RecycleScroller>
+
+          <!-- 不超过阈值时正常渲染 -->
+          <template v-else>
+            <GGanttRow v-for="row in rows" :key="row.label" :label="row.label" :bars="row.bars" />
+          </template>
         </GGanttChart>
       </div>
 
@@ -479,6 +503,17 @@ async function regenerateData() {
 
 .gantt-wrapper :deep(.g-gantt-chart) {
   min-height: 100%;
+}
+
+/* 虚拟滚动容器 */
+.virtual-scroller {
+  height: 100%;
+  min-height: 200px;
+}
+
+/* 确保虚拟滚动内的行撑满宽度 */
+.virtual-scroller :deep(.vue-recycle-scroller__item-view) {
+  width: 100%;
 }
 
 .code-wrapper {

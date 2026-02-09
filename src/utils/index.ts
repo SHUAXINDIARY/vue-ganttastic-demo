@@ -85,6 +85,7 @@ export function generateRows(config: GenerateConfig = defaultConfig): { label: s
                 ganttBarConfig: {
                     id: `row-${rowIndex}-bar-${barIndex}`,
                     label: `任务 ${barIndex + 1}`,
+                    immobile: true,
                     style: {
                         background: color
                     }

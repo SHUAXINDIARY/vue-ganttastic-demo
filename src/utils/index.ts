@@ -57,11 +57,22 @@ export const defaultConfig: GenerateConfig = {
     maxBars: 20
 }
 
+// 剧本名称列表
+const scriptNames = [
+    '星河漫游', '深海迷踪', '风起长安', '暗夜追踪', '云端之上',
+    '逆光飞翔', '破晓之城', '流浪地球', '幻梦奇缘', '烽火连城',
+    '雪域苍穹', '碧海潮生', '月下花影', '铁血丹心', '九州缥缈',
+]
+
 // 生成甘特图数据的函数
 export function generateRows(config: GenerateConfig = defaultConfig): { label: string; bars: GanttBar[] }[] {
     const { rowCount, minBars, maxBars } = config
     const actualMinBars = Math.min(minBars, maxBars)
     const actualMaxBars = Math.max(minBars, maxBars)
+
+    // 随机选一个剧本名和起始集数
+    const scriptName = scriptNames[randomInt(0, scriptNames.length - 1)]!
+    const startEpisode = randomInt(1, 20)
 
     return Array.from({ length: rowCount }, (_, rowIndex) => {
         const barCount = randomInt(actualMinBars, actualMaxBars)
@@ -107,7 +118,7 @@ export function generateRows(config: GenerateConfig = defaultConfig): { label: s
         })
 
         return {
-            label: `分镜 ${rowIndex + 1}`,
+            label: `${scriptName}第${startEpisode}集 分镜${rowIndex + 1}`,
             bars
         }
     })

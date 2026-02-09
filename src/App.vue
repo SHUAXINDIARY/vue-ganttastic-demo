@@ -69,11 +69,22 @@ function closeModal() {
 // ============================================
 // 甘特图事件处理
 // ============================================
+let isDragging = false
+
+function onBarDragStart() {
+  isDragging = true
+}
+
 function onBarDragEnd(event: { bar: Record<string, unknown>; e: MouseEvent }) {
   console.log('Bar dragged:', event.bar)
+  // 延迟重置标记，确保 click 事件先被拦截
+  setTimeout(() => {
+    isDragging = false
+  }, 0)
 }
 
 function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
+  if (isDragging) return
   openModal(event.bar)
 }
 
@@ -203,7 +214,7 @@ async function regenerateData() {
       <div class="gantt-wrapper">
         <GGanttChart :chart-start="chartStart" :chart-end="chartEnd" precision="hour" width="100%" bar-start="beginDate"
           bar-end="endDate" :row-height="45" grid current-time current-time-label="当前时间" @click-bar="onBarClick"
-          @dragend-bar="onBarDragEnd">
+          @dragstart-bar="onBarDragStart" @dragend-bar="onBarDragEnd">
           <template #upper-timeunit="{ value }">
             {{ formatUpperTimeunit(value ?? '') }}
           </template>

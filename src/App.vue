@@ -1,30 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { GGanttChart, GGanttRow } from '@infectoone/vue-ganttastic'
-import { RecycleScroller } from 'vue-virtual-scroller'
 import dayjs from 'dayjs'
 import { rows, generateRows, defaultConfig, type GenerateConfig } from './utils'
+import GanttChart from './components/GanttChart.vue'
+import BarDetailModal from './components/BarDetailModal.vue'
 import CodePanel from './components/code/index.vue'
-import type { GanttBar } from './types'
-
-// ============================================
-// 虚拟滚动阈值
-// ============================================
-const VIRTUAL_SCROLL_THRESHOLD = 50
-
-// ============================================
-// 类型定义
-// ============================================
-interface GanttRowData {
-  label: string
-  bars: GanttBar[]
-}
-
-interface BarConfig {
-  id?: string
-  label?: string
-  style?: Record<string, string>
-}
+import type { GanttBar, GanttRowData } from './types'
 
 // ============================================
 // 图表时间配置
@@ -34,66 +15,19 @@ const chartStart = computed(() => `${dateStr.value} 09:00`)
 const chartEnd = computed(() => `${dateStr.value} 20:59`)
 
 // ============================================
-// 时间格式化函数
-// ============================================
-function formatUpperTimeunit(value: string): string {
-  const date = dayjs(value)
-  return date.isValid() ? date.format('M月D日') : value
-}
-
-function formatTimeunit(label: string | undefined): string {
-  return label ? `${label}时` : ''
-}
-
-function formatBarTime(datetime: string): string {
-  const date = dayjs(datetime)
-  return date.isValid() ? date.format('HH:mm') : datetime
-}
-
-// ============================================
 // Modal 状态管理
 // ============================================
 const showModal = ref(false)
-const selectedBar = ref<Record<string, unknown> | null>(null)
+const selectedBar = ref<GanttBar | null>(null)
 
-// 选中条的配置信息（计算属性避免重复类型转换）
-const selectedBarConfig = computed<BarConfig | null>(() => {
-  if (!selectedBar.value) return null
-  return selectedBar.value.ganttBarConfig as BarConfig
-})
-
-function openModal(bar: Record<string, unknown>) {
-  selectedBar.value = bar
+function onBarClick(payload: { bar: GanttBar; e: MouseEvent }) {
+  selectedBar.value = payload.bar
   showModal.value = true
 }
 
-function closeModal() {
-  showModal.value = false
+function onModalClose() {
   selectedBar.value = null
 }
-
-// ============================================
-// 甘特图事件处理
-// ============================================
-function onBarClick(event: { bar: Record<string, unknown>; e: MouseEvent }) {
-  openModal(event.bar)
-}
-
-// ============================================
-// 虚拟滚动
-// ============================================
-const useVirtualScroll = computed(() => rows.value.length > VIRTUAL_SCROLL_THRESHOLD)
-
-// 为 RecycleScroller 添加唯一 id 的行数据
-const rowsWithId = computed(() =>
-  rows.value.map((row, index) => ({
-    ...row,
-    id: `row-${index}-${row.label}`,
-  }))
-)
-
-// 甘特图行高（与 GGanttChart 的 row-height 保持一致）
-const ROW_HEIGHT = 45
 
 // ============================================
 // 数据更新
@@ -151,6 +85,7 @@ async function regenerateData() {
       <h1 class="title">抽卡师 刷新 - 今日任务甘特图</h1>
       <p class="subtitle">{{ dateStr }} (小时维度)</p>
     </header>
+
     <!-- 生成数量控制面板 -->
     <div class="control-panel">
       <div class="control-group">
@@ -219,34 +154,12 @@ async function regenerateData() {
     <div class="main-content">
       <!-- 左侧甘特图 -->
       <div class="gantt-wrapper">
-        <GGanttChart :chart-start="chartStart" :chart-end="chartEnd" precision="hour" width="100%" bar-start="beginDate"
-          bar-end="endDate" :row-height="ROW_HEIGHT" grid current-time current-time-label="当前时间" @click-bar="onBarClick">
-          <template #upper-timeunit="{ value }">
-            {{ formatUpperTimeunit(value ?? '') }}
-          </template>
-          <template #timeunit="{ label }">
-            {{ formatTimeunit(label) }}
-          </template>
-
-          <!-- 超过阈值时启用虚拟滚动 -->
-          <RecycleScroller
-            v-if="useVirtualScroll"
-            class="virtual-scroller"
-            :items="rowsWithId"
-            :item-size="ROW_HEIGHT"
-            key-field="id"
-            :buffer="ROW_HEIGHT * 10"
-          >
-            <template #default="{ item }">
-              <GGanttRow :label="item.label" :bars="item.bars" />
-            </template>
-          </RecycleScroller>
-
-          <!-- 不超过阈值时正常渲染 -->
-          <template v-else>
-            <GGanttRow v-for="row in rows" :key="row.label" :label="row.label" :bars="row.bars" />
-          </template>
-        </GGanttChart>
+        <GanttChart
+          :rows="rows"
+          :chart-start="chartStart"
+          :chart-end="chartEnd"
+          @click-bar="onBarClick"
+        />
       </div>
 
       <!-- 右侧数据面板 -->
@@ -255,42 +168,12 @@ async function regenerateData() {
       </div>
     </div>
 
-    <!-- 详情 Modal -->
-    <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>任务详情</h2>
-            <button class="modal-close" @click="closeModal">&times;</button>
-          </div>
-          <div v-if="selectedBar && selectedBarConfig" class="modal-body">
-            <div class="detail-item">
-              <span class="detail-label">任务名称</span>
-              <span class="detail-value">{{ selectedBarConfig.label ?? '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">任务ID</span>
-              <span class="detail-value">{{ selectedBarConfig.id ?? '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">开始时间</span>
-              <span class="detail-value">{{ formatBarTime(selectedBar.beginDate as string) }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">结束时间</span>
-              <span class="detail-value">{{ formatBarTime(selectedBar.endDate as string) }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">颜色标识</span>
-              <span class="detail-value">
-                <span class="color-badge" :style="{ background: selectedBarConfig.style?.background }" />
-                {{ selectedBarConfig.style?.background }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <!-- 任务详情弹窗 -->
+    <BarDetailModal
+      v-model:visible="showModal"
+      :bar="selectedBar"
+      @close="onModalClose"
+    />
   </div>
 </template>
 
@@ -498,129 +381,10 @@ async function regenerateData() {
 .gantt-wrapper {
   flex: 1;
   min-width: 0;
-  overflow: auto;
-}
-
-.gantt-wrapper :deep(.g-gantt-chart) {
-  min-height: 100%;
-}
-
-/* 虚拟滚动容器 */
-.virtual-scroller {
-  height: 100%;
-  min-height: 200px;
-}
-
-/* 确保虚拟滚动内的行撑满宽度 */
-.virtual-scroller :deep(.vue-recycle-scroller__item-view) {
-  width: 100%;
 }
 
 .code-wrapper {
   width: 400px;
   flex-shrink: 0;
-}
-
-/* Modal 样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  min-width: 360px;
-  max-width: 90vw;
-  animation: modal-appear 0.2s ease-out;
-}
-
-@keyframes modal-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.2em;
-  color: #2c3e50;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  color: #999;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  transition: color 0.2s;
-}
-
-.modal-close:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.detail-item:last-child {
-  border-bottom: none;
-}
-
-.detail-label {
-  width: 80px;
-  color: #7f8c8d;
-  font-size: 0.9em;
-  flex-shrink: 0;
-}
-
-.detail-value {
-  flex: 1;
-  color: #2c3e50;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.color-badge {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 </style>

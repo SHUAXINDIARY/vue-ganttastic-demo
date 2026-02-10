@@ -9,3 +9,16 @@ export interface GanttBar {
         style?: Record<string, string>
     }
 }
+
+// 甘特图行数据类型
+export interface GanttRowData {
+    label: string
+    bars: GanttBar[]
+}
+
+// 甘特图 Bar 配置（用于展示详情）
+export interface GanttBarConfig {
+    id?: string
+    label?: string
+    style?: Record<string, string>
+}
